@@ -1,78 +1,75 @@
 defmodule KVStore.Store do
-  use Agent
+  @moduledoc """
+  Functions for altering the store.
+  All function should return an {:ok, value} tuple on success.
+  """
 
   @doc """
-  Initializes key-value agent store.
+  Initializes key-value server store.
 
-  The agent state is a list of state history where the head is either a transaction in progress or the root-level store.
+  The server state is a list of state history where the head is either a transaction in progress or the root-level store.
   """
-  def start(_, _) do
-    Agent.start_link(fn -> [%{}] end, name: __MODULE__)
+  def new do
+    [%{}]
   end
 
-  def run_command("SET", key, value) do
-    Agent.update(__MODULE__, &set(&1, key, value))
-  end
-
-  def run_command("GET", key) do
-    Agent.get(__MODULE__, &get(&1, key))
-  end
-
-  def run_command("DELETE", key) do
-    Agent.update(__MODULE__, &delete(&1, key))
-  end
-
-  def run_command("COUNT", value) do
-    Agent.get(__MODULE__, &count(&1, value))
-  end
-
-  def run_command("BEGIN") do
-    Agent.update(__MODULE__, &begin_transaction(&1))
-  end
-
-  def run_command("COMMIT") do
-    Agent.update(__MODULE__, &commit_transaction(&1))
-  end
-
-  def run_command("ROLLBACK") do
-    Agent.update(__MODULE__, &rollback_transaction(&1))
-  end
-
-  defp set([store | history], key, value) do
+  def set([store | history], key, value) do
     new_store = Map.put(store, key, value)
-    [new_store | history]
+    {:ok, [new_store | history]}
   end
 
-  defp get([store | _], key) do
+  def get([store | _], key) do
     Map.fetch(store, key)
   end
 
-  defp delete([store | history], key) do
-    case Map.fetch(store, key) do
-      {:ok, _value} ->
-        new_store = Map.delete(store, key)
-        [new_store | history]
-
-      :error ->
-        :error
+  def delete([store | history], key) do
+    if Map.has_key?(store, key) do
+      new_store = Map.delete(store, key)
+      {:ok, [new_store | history]}
+    else
+      :error
     end
   end
 
-  defp count([store | _], value) do
-    Enum.count(store, fn {_key, val} ->
-      val == value
-    end)
+  def count([store | _], value) do
+    count =
+      Enum.count(store, fn {_key, val} ->
+        val == value
+      end)
+
+    {:ok, count}
   end
 
-  defp begin_transaction(history = [store | _]) do
-    [store | history]
+  @doc """
+  Copies the current head of store into a new map for altering.
+  """
+  def begin_transaction(history = [store | _]) do
+    {:ok, [store | history]}
   end
 
-  defp commit_transaction([current | [_, history]]) do
-    [current | history]
+  @doc """
+  Commits the transaction by replacing the head of the story history list with the current state.
+
+  If the history list has only 1 item, there is no current transaction and returns an error.
+  """
+  def commit_transaction([_current | []]) do
+    :error
   end
 
-  defp rollback_transaction([current | history]) do
-    history
+  def commit_transaction([current | [_ | history]]) do
+    {:ok, [current | history]}
+  end
+
+  @doc """
+  Removes the transaction by removing the head of the store list.
+
+  If the history list has only 1 item, there is no current transaction and returns an error.
+  """
+  def rollback_transaction([_current | []]) do
+    :error
+  end
+
+  def rollback_transaction([_current | history]) do
+    {:ok, history}
   end
 end

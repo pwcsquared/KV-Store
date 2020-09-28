@@ -16,7 +16,7 @@ defmodule KVStore.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {KVStore.Store, []}
+      mod: {KVStore.Server, []}
     ]
   end
 

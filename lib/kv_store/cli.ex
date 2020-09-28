@@ -4,7 +4,7 @@ defmodule KVStore.CLI do
   @one_arg_commands ["GET", "DELETE", "COUNT"]
   @two_arg_commands ["SET"]
 
-  alias KVStore.Store
+  alias KVStore.Server
 
   def main(_) do
     await_command()
@@ -25,7 +25,8 @@ defmodule KVStore.CLI do
 
   defp execute_command({[], [command], []}) when command in @no_arg_commands do
     command
-    |> Store.run_command()
+    |> Server.run_command()
+    |> handle_response(command)
     |> IO.puts()
 
     await_command()
@@ -33,7 +34,8 @@ defmodule KVStore.CLI do
 
   defp execute_command({[], [command, arg], []}) when command in @one_arg_commands do
     command
-    |> Store.run_command(arg)
+    |> Server.run_command(arg)
+    |> handle_response(command)
     |> IO.puts()
 
     await_command()
@@ -41,7 +43,8 @@ defmodule KVStore.CLI do
 
   defp execute_command({[], [command, arg1, arg2], []}) when command in @two_arg_commands do
     command
-    |> Store.run_command(arg1, arg2)
+    |> Server.run_command(arg1, arg2)
+    |> handle_response(command)
     |> IO.puts()
 
     await_command()
@@ -50,5 +53,21 @@ defmodule KVStore.CLI do
   defp execute_command(_) do
     IO.puts("invalid command")
     await_command()
+  end
+
+  defp handle_response(:error, command) when command in @one_arg_commands do
+    "key not set"
+  end
+
+  defp handle_response(:error, command) when command in @no_arg_commands do
+    "no transaction"
+  end
+
+  defp handle_response(:error, _command) do
+    "unknown error"
+  end
+
+  defp handle_response(value, _command) do
+    value
   end
 end
