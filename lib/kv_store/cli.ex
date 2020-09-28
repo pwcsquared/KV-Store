@@ -1,5 +1,8 @@
 defmodule KVStore.CLI do
   @switches []
+  @no_arg_commands ["BEGIN", "COMMIT", "ROLLBACK"]
+  @one_arg_commands ["GET", "DELETE", "COUNT"]
+  @two_arg_commands ["SET"]
 
   def main(_) do
     await_command()
@@ -10,7 +13,7 @@ defmodule KVStore.CLI do
     |> process_command()
   end
 
-  def process_command(command) do
+  defp process_command(command) do
     command
     |> String.trim()
     |> OptionParser.split()
@@ -18,17 +21,23 @@ defmodule KVStore.CLI do
     |> execute_command()
   end
 
-  defp execute_command({[], ["quit"], []}) do
-    IO.puts "quitting..."
-  end
-
-  defp execute_command({[], [command], []}) do
-    IO.puts "received command #{command}"
+  defp execute_command({[], [command], []}) when command in @no_arg_commands do
+    IO.puts("received command #{command}")
     await_command()
   end
 
-  defp execute_command({[], [command, arg], []}) do
-    IO.puts "received command #{command}, with args #{arg}"
+  defp execute_command({[], [command, arg], []}) when command in @one_arg_commands do
+    IO.puts("received command #{command}, with args #{arg}")
+    await_command()
+  end
+
+  defp execute_command({[], [command, arg1, arg2], []}) when command in @two_arg_commands do
+    IO.puts("received command #{command}, with args #{arg1}, #{arg2}")
+    await_command()
+  end
+
+  defp execute_command(_) do
+    IO.puts("invalid command")
     await_command()
   end
 end
