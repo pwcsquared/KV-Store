@@ -4,6 +4,8 @@ defmodule KVStore.CLI do
   @one_arg_commands ["GET", "DELETE", "COUNT"]
   @two_arg_commands ["SET"]
 
+  alias KVStore.Store
+
   def main(_) do
     await_command()
   end
@@ -22,17 +24,26 @@ defmodule KVStore.CLI do
   end
 
   defp execute_command({[], [command], []}) when command in @no_arg_commands do
-    IO.puts("received command #{command}")
+    command
+    |> Store.run_command()
+    |> IO.puts()
+
     await_command()
   end
 
   defp execute_command({[], [command, arg], []}) when command in @one_arg_commands do
-    IO.puts("received command #{command}, with args #{arg}")
+    command
+    |> Store.run_command(arg)
+    |> IO.puts()
+
     await_command()
   end
 
   defp execute_command({[], [command, arg1, arg2], []}) when command in @two_arg_commands do
-    IO.puts("received command #{command}, with args #{arg1}, #{arg2}")
+    command
+    |> Store.run_command(arg1, arg2)
+    |> IO.puts()
+
     await_command()
   end
 
